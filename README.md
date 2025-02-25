@@ -63,4 +63,4 @@ gsutil -m rsync -d -r gs://your-bucket-name/your-folder/ ml_artifacts/
 
 ---
 
-*Created by Jay Dasani 
+**Created by Jay Dasani**
