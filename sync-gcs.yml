@@ -1,0 +1,48 @@
+name: Sync GCS Files to GitHub
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Runs daily at midnight
+  workflow_dispatch:      # Allows manual trigger
+
+jobs:
+  sync-files:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write     # Needed for pushing changes
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Google Auth
+      id: auth
+      uses: google-github-actions/auth@v1
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+        cleanup_credentials: true
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v1
+      with:
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+        install_components: 'gsutil'
+
+    - name: Sync files from GCS
+      run: |
+        # Create the target directory
+        mkdir -p ml_artifacts
+        
+        # Download files from bucket
+        gsutil -m cp -r gs://your-bucket-name/your-folder/* ml_artifacts/
+        
+        # Check if there are any changes
+        if [[ -n $(git status --porcelain) ]]; then
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add ml_artifacts/
+          git commit -m "Update ML artifacts from GCS bucket"
+          git push
+        else
+          echo "No changes to commit"
+        fi
